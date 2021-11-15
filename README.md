@@ -1,4 +1,7 @@
 # machete
+
+![](https://user-images.githubusercontent.com/15942946/141735195-b32d95f3-3580-41f0-bc9f-6bad9355242f.jpg)
+
 A CLI tool for vertically splitting image with content awareness, written in Rust.
 
 ## Usage
