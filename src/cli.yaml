@@ -1,0 +1,28 @@
+name: machete
+version: "1.0"
+author: Thang Tran <tranthang.yb@outlook.com>
+about: Learning Rust
+args:
+    - input-file:
+        about: Set input file path
+        required: true
+        index: 1
+    - output-directory:
+        about: Set output directory path
+        required: true
+        index: 2
+    - color-threshold:
+        long: color-threshold
+        value_name: NUMBER
+        about: Set color threshold number
+        takes_value: true
+    - min-height:
+        long: min-height
+        value_name: NUMBER
+        about: Set minimum height number
+        takes_value: true
+    - max-height:
+        long: max-height
+        value_name: NUMBER
+        about: Set maximum height number
+        takes_value: true
