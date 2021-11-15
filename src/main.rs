@@ -14,43 +14,18 @@ fn main() {
             panic!("Problem creating the file: {:?}", e)
         }
     };
-
     let (width, height) = img.dimensions();
 
-    let mut x = min_height;
+    let split_pos = find_split_pos(width, height, color_threshold, min_height, max_height, &img);
+    let results = split(&output_directory, &split_pos, &mut img, width);
 
-    let mut current_height = min_height;
+    println!("{}", json!({
+        "status": "processed",
+        "result": results
+    }));
+}
 
-    let mut cut_rows: Vec<u32> = Vec::new();
-
-    while x < height {
-        let is_row_solid = check_row_solid(&img, x, width, color_threshold);
-        if is_row_solid {
-            cut_rows.push(x);
-            x += min_height;
-            current_height = min_height;
-            // println!("{}", json!({
-            //     "status": "processing",
-            //     "progress": x as f64 / height as f64
-            // }));
-            // thread::sleep(Duration::from_millis(100));
-        } else if current_height > max_height {
-            cut_rows.push(x);
-            x += min_height;
-            current_height = min_height;
-            // println!("{}", json!({
-            //     "status": "processing",
-            //     "progress": x as f64 / height as f64
-            // }));
-            // thread::sleep(Duration::from_millis(100));
-        } else {
-            x += 40;
-            current_height += 40;
-        }
-    }
-
-    cut_rows.push(height);
-
+fn split(output_directory: &str, cut_rows: &Vec<u32>, img: &mut ImageBuffer<image::Rgb<u8>, Vec<u8>>, width: u32) -> Vec<String> {
     let image_dir = Path::new(&output_directory);
     let mut last_row = 0;
 
@@ -58,7 +33,7 @@ fn main() {
 
     for (i, x) in cut_rows.iter().enumerate() {
         let crop_height = x - last_row;
-        let cropped_img = imageops::crop(&mut img, 0, last_row, width, crop_height).to_image();
+        let cropped_img = imageops::crop(img, 0, last_row, width, crop_height).to_image();
 
         let mut filename = format!("{:0>3}", i);
         filename.push_str(".jpg");
@@ -72,10 +47,34 @@ fn main() {
         }
         last_row = *x;
     }
-    println!("{}", json!({
-        "status": "processed",
-        "result": results
-    }));
+
+    results
+}
+
+fn find_split_pos(width: u32, height: u32, color_threshold: u8, min_height: u32, max_height: u32, img: &ImageBuffer<image::Rgb<u8>, Vec<u8>>) -> Vec<u32> {
+    let check_step = 40;
+    let mut x = min_height;
+    let mut current_height = min_height;
+    let mut cut_rows: Vec<u32> = Vec::new();
+
+    while x < height {
+        let is_row_solid = check_row_solid(&img, x, width, color_threshold);
+        if is_row_solid {
+            cut_rows.push(x);
+            x += min_height;
+            current_height = min_height;
+        } else if current_height + check_step > max_height {
+            cut_rows.push(x);
+            x += min_height;
+            current_height = min_height;
+        } else {
+            x += check_step;
+            current_height += check_step;
+        }
+    }
+
+    cut_rows.push(height);
+    cut_rows
 }
 
 fn parse_args() -> (String, String, u8, u32, u32) {
