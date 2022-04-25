@@ -16,6 +16,11 @@ args:
         value_name: NUMBER
         about: Set color threshold number
         takes_value: true
+    - padding:
+        long: padding
+        value_name: NUMBER
+        about: Set check padding
+        takes_value: true
     - min-height:
         long: min-height
         value_name: NUMBER
@@ -25,4 +30,9 @@ args:
         long: max-height
         value_name: NUMBER
         about: Set maximum height number
+        takes_value: true
+    - check-step:
+        long: check-step
+        value_name: NUMBER
+        about: Set height check each step
         takes_value: true

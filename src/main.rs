@@ -5,7 +5,7 @@ use image::ImageBuffer;
 use image::imageops;
 
 fn main() {
-    let (input_file, output_directory, color_threshold, min_height, max_height) = parse_args();
+    let (input_file, output_directory, color_threshold, padding, min_height, max_height, check_step) = parse_args();
 
     let img_read = image::open(input_file);
     let mut img = match img_read {
@@ -16,7 +16,7 @@ fn main() {
     };
     let (width, height) = img.dimensions();
 
-    let split_pos = find_split_pos(width, height, color_threshold, min_height, max_height, &img);
+    let split_pos = find_split_pos(width, height, color_threshold, padding, min_height, max_height, check_step, &img);
     let results = split(&output_directory, &split_pos, &mut img, width);
 
     println!("{}", json!({
@@ -51,14 +51,13 @@ fn split(output_directory: &str, cut_rows: &Vec<u32>, img: &mut ImageBuffer<imag
     results
 }
 
-fn find_split_pos(width: u32, height: u32, color_threshold: u8, min_height: u32, max_height: u32, img: &ImageBuffer<image::Rgb<u8>, Vec<u8>>) -> Vec<u32> {
-    let check_step = 40;
+fn find_split_pos(width: u32, height: u32, color_threshold: u8, padding: u32, min_height: u32, max_height: u32, check_step: u32, img: &ImageBuffer<image::Rgb<u8>, Vec<u8>>) -> Vec<u32> {
     let mut x = min_height;
     let mut current_height = min_height;
     let mut cut_rows: Vec<u32> = Vec::new();
 
     while x < height {
-        let is_row_solid = check_row_solid(&img, x, width, color_threshold);
+        let is_row_solid = check_row_solid(&img, x, width, color_threshold, padding);
         if is_row_solid {
             cut_rows.push(x);
             x += min_height;
@@ -77,7 +76,7 @@ fn find_split_pos(width: u32, height: u32, color_threshold: u8, min_height: u32,
     cut_rows
 }
 
-fn parse_args() -> (String, String, u8, u32, u32) {
+fn parse_args() -> (String, String, u8, u32, u32, u32, u32) {
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from(yaml).get_matches();
 
@@ -100,6 +99,12 @@ fn parse_args() -> (String, String, u8, u32, u32) {
         None => color_threshold = 2
     }
 
+    let padding: u32;
+    match matches.value_of("padding") {
+        Some(s) => padding = s.parse().unwrap(),
+        None => padding = 10
+    }
+
     let min_height: u32;
     match matches.value_of("min-height") {
         Some(s) => min_height = s.parse().unwrap(),
@@ -112,13 +117,19 @@ fn parse_args() -> (String, String, u8, u32, u32) {
         None => max_height = 7000
     }
 
-    (input_file, output_directory, color_threshold, min_height, max_height)
+    let check_step: u32;
+    match matches.value_of("check-step") {
+        Some(s) => check_step = s.parse().unwrap(),
+        None => check_step = 40
+    }
+
+    (input_file, output_directory, color_threshold, padding, min_height, max_height, check_step)
 }
 
-fn check_row_solid(img: &ImageBuffer<image::Rgb<u8>, Vec<u8>>, x: u32, width: u32, color_threshold: u8) -> bool {
-    let first_px = img.get_pixel(0, x).0;
-    let mut current_pos = 1;
-    while current_pos < width {
+fn check_row_solid(img: &ImageBuffer<image::Rgb<u8>, Vec<u8>>, x: u32, width: u32, color_threshold: u8, padding: u32) -> bool {
+    let first_px = img.get_pixel(padding, x).0;
+    let mut current_pos = padding;
+    while current_pos < width - padding {
         let current_px = img.get_pixel(current_pos, x).0;
         let current_r: i16 = current_px[0].into();
         let current_g: i16 = current_px[1].into();
